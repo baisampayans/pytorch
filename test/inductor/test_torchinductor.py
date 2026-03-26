@@ -8320,6 +8320,35 @@ def forward(self, arg0_1: "Sym(s77)", arg1_1: "Sym(s27)", arg2_1: "Sym(s53)", ar
             self.common(fn, (inp, False))
             self.common(fn, (inp, True))
 
+    @patch.object(config.triton, "decompose_sort_ops", True)
+    def test_median_decompose_sort_ops(self):
+        def fn_default(a):
+            return torch.median(a)
+
+        def fn_dim(a):
+            return torch.median(a, dim=1)
+
+        def fn_dim_keepdim(a):
+            return torch.median(a, dim=1, keepdim=True)
+
+        inp = torch.randn(8, 16)
+        self.common(fn_default, (inp,))
+        self.common(fn_dim, (inp,))
+        self.common(fn_dim_keepdim, (inp,))
+
+    @patch.object(config.triton, "decompose_sort_ops", True)
+    def test_mode_decompose_sort_ops(self):
+        def fn(a):
+            return torch.mode(a, dim=1)
+
+        def fn_keepdim(a):
+            return torch.mode(a, dim=1, keepdim=True)
+
+        # Use integers so ties are common, exercising run-length logic
+        inp = torch.randint(0, 5, size=[8, 16], dtype=torch.float32)
+        self.common(fn, (inp,))
+        self.common(fn_keepdim, (inp,))
+
     def test_topk(self):
         def fn(a):
             return torch.topk(a, 2, -1)
